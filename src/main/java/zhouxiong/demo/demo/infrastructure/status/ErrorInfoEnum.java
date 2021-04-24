@@ -14,6 +14,11 @@ import java.util.Arrays;
 public enum ErrorInfoEnum implements ErrorInfo {
 
     /**
+     * 停车场已无车位
+     */
+    NO_PARKING_SPACE(10002,"停车场已无车位"),
+
+    /**
      * 车辆进入停车场信息存入数据库失败
      */
     ERROR(10001,"车辆进入停车场信息存入数据库失败，请检查！")

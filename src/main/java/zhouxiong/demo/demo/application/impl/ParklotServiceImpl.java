@@ -46,6 +46,15 @@ public class ParklotServiceImpl extends BaseServiceImpl<ParklotMapper,Parklot>im
     @Transactional(rollbackFor = Exception.class)
     public ParkingSpaceVO vehicleEntering(ParklotDO parklotDO) {
 
+        //首先查询停车位是否大于1
+        // 前提：数据库初始数据为当前停车场全部的停车位数量
+        ParkingSpace parkingSpace = parkingSpaceMapper.selectOne(Wrappers.<ParkingSpace>lambdaQuery()
+        );
+        if(parkingSpace.getRemainingParkingSpaces().intValue()<1){
+            //剩余停车位为0时。抛出剩余为0的信息
+            throw new LadOpenException(ErrorInfoEnum.NO_PARKING_SPACE);
+        }
+
         //首先将该汽车，车类型，车牌号，入停车场时间保存到数据库中
         Parklot build = Parklot.builder()
                 .entryTime(LocalDateTime.now())
@@ -60,19 +69,16 @@ public class ParklotServiceImpl extends BaseServiceImpl<ParklotMapper,Parklot>im
             throw new LadOpenException(ErrorInfoEnum.ERROR);
         }
 
-        //保存成功后，停车位数据减一       前提：数据库初始数据为当前停车场的停车位数量
-        ParkingSpace parkingSpace = parkingSpaceMapper.selectOne(Wrappers.<ParkingSpace>lambdaQuery()
-        );
+        //保存成功后，停车位数据库数据减一
+        //在数据库中修改停车位剩余车位
+        parkingSpace.setRemainingParkingSpaces(parkingSpace.getRemainingParkingSpaces()-1);
+        parkingSpaceMapper.updateById(parkingSpace);
 
         //将车牌号，停车场剩余车位返回
         ParkingSpaceVO parkingSpaceVO = ParkingSpaceVO.builder()
                 .numberPlate(parklotDO.getNumberPlate())
                 .remainingParkingSpaces(parkingSpace.getRemainingParkingSpaces()-1)
                 .build();
-
-        //在数据库中修改停车位剩余车位
-        parkingSpace.setRemainingParkingSpaces(parkingSpace.getRemainingParkingSpaces()-1);
-        parkingSpaceMapper.updateById(parkingSpace);
         return parkingSpaceVO;
     }
 
@@ -152,6 +158,5 @@ public class ParklotServiceImpl extends BaseServiceImpl<ParklotMapper,Parklot>im
         }
         return todayTotalAmount;
     }
-
 
 }
